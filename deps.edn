@@ -1,0 +1,8 @@
+{:paths ["src" "resources"]
+ :deps {no.cjohansen/powerpack {:mvn/version "2025.10.22"
+                                :exclusions [ring/ring]}
+        ring/ring {:mvn/version "1.15.3"}}
+ :aliases {:dev {:extra-paths ["dev"]}
+           :build {:exec-fn powerblog.export/export!}
+           :test {:extra-deps {lambdaisland/kaocha {:mvn/version "1.88.1376"}}
+                  :main-opts ["-m" "kaocha.runner"]}}}

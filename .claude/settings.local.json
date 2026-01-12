@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(bb:*)",
+      "Skill(dnd-dice)",
+      "Bash(bd --help:*)",
+      "Bash(bd status:*)",
+      "Bash(bd create:*)",
+      "Bash(bd list:*)",
+      "Bash(bd update:*)",
+      "Bash(bd close:*)",
+      "Bash(bd:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(./bin/kaocha.ps1)",
+      "Bash(git log:*)",
+      "Bash(ls:*)",
+      "Bash(git push:*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bb ./bb/notify.clj"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bb ./bb/notify.clj"
+          }
+        ]
+      }
+    ]
+  }
+}
