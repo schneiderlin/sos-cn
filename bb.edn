@@ -2,4 +2,4 @@
  :deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
         org.babashka/json {:mvn/version "0.1.6"}}
  :tasks {tw {:doc "Watch Tailwind CSS"
-             :cmd "npx @tailwindcss/cli -i ./src/main.css -o ./resources/public/styles.css --watch"}}}
+             :task "npx @tailwindcss/cli -i ./src/main.css -o ./resources/public/styles.css --watch"}}}

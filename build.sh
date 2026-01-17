@@ -20,7 +20,11 @@ clojure -X:build
 
 # Build CSS AFTER HTML exists (so Tailwind detects all used classes)
 echo "Building CSS..."
-npx @tailwindcss/cli -i ./src/main.css -o ./resources/public/styles.css
+npx @tailwindcss/cli -i ./src/main.css -o ./resources/public/styles.css --verbose
+
+# Copy the freshly built CSS to output directory (Clojure export already copied the old one)
+echo "Copying CSS to output..."
+cp ./resources/public/styles.css ./target/powerpack/styles.css
 
 echo "Build complete! Output in target/powerpack/ directory"
 
