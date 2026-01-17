@@ -14,13 +14,13 @@ if ! command -v clojure &> /dev/null; then
   export PATH="$PREFIX/bin:$PATH"
 fi
 
-# Build CSS first
-echo "Building CSS..."
-npx @tailwindcss/cli -i ./src/main.css -o ./resources/public/styles.css
-
-# Run the build
+# Build static site FIRST (so Tailwind can scan generated HTML)
 echo "Building static site..."
 clojure -X:build
+
+# Build CSS AFTER HTML exists (so Tailwind detects all used classes)
+echo "Building CSS..."
+npx @tailwindcss/cli -i ./src/main.css -o ./resources/public/styles.css
 
 echo "Build complete! Output in target/powerpack/ directory"
 
