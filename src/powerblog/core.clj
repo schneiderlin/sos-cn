@@ -24,4 +24,5 @@
                       :paths ["/styles.css" "/css/visualizations.css"]}}
    :optimus/assets [{:public-dir "public"
                      :paths ["/js/race-visualizations.js"]}]
-   :optimus/options {:minify-js-assets? false}})
+   :optimus/options {:minify-js-assets? false
+                     :minify-css-assets? false}})
