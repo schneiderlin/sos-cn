@@ -21,8 +21,7 @@
    #_#_:powerpack/on-ingested #'ingest/on-ingested
    :optimus/bundles {"app.css"
                      {:public-dir "public"
-                      :paths ["/styles.css"]}}
+                      :paths ["/styles.css" "/css/visualizations.css"]}}
    :optimus/assets [{:public-dir "public"
-                     :paths ["/js/race-visualizations.js"
-                             "/css/visualizations.css"]}]
+                     :paths ["/js/race-visualizations.js"]}]
    :optimus/options {:minify-js-assets? false}})
