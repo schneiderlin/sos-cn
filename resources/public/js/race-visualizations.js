@@ -70,6 +70,7 @@ window.RaceVisualizations = {
 
   /**
    * 在 HTML 注释位置之后查找第一个 table 元素
+   * 通过遍历 DOM 找到标记后最近的表格
    */
   findNextTableAfter: function(searchIndex, html) {
     const tables = document.querySelectorAll('table');
@@ -78,7 +79,34 @@ window.RaceVisualizations = {
       return null;
     }
 
-    // 简化：返回第一个表格（实际应该精确定位）
+    // 从 HTML 字符串中提取标记后的位置
+    const markerEndIndex = html.indexOf('-->', searchIndex);
+    if (markerEndIndex === -1) return tables[0];
+    
+    const htmlAfterMarker = html.substring(markerEndIndex);
+    
+    // 找到标记后第一个 <table 的位置
+    const tableMatch = htmlAfterMarker.match(/<table[^>]*>/i);
+    if (!tableMatch) return null;
+    
+    const tableStartInSubstring = tableMatch.index;
+    const tableStartInFullHtml = markerEndIndex + tableStartInSubstring;
+    
+    // 现在我们知道标记后第一个表格在 HTML 中的位置
+    // 遍历所有表格，找到位置匹配的那个
+    for (const table of tables) {
+      const tableHtml = table.outerHTML;
+      const tablePosition = html.indexOf(tableHtml);
+      
+      // 如果这个表格出现在标记之后，就是我们要找的
+      if (tablePosition >= markerEndIndex) {
+        console.log(`找到标记后的表格，位置: ${tablePosition}`);
+        return table;
+      }
+    }
+
+    // 回退：返回最后一个表格（可能标记在页面末尾）
+    console.warn('未能精确定位表格，返回第一个表格');
     return tables[0];
   },
 
@@ -136,10 +164,16 @@ window.RaceVisualizations = {
     const data = tableData.data.map(row => {
       const values = valueCols.map(col => {
         const val = row[col];
+        // 处理对象类型（如 {type: 'multiply', value: 3, raw: '3x'}）
         if (val && typeof val === 'object' && val.value !== undefined) {
           return val.value;
         }
-        return val || 0;
+        // 处理数字
+        if (typeof val === 'number') {
+          return val;
+        }
+        // 处理 null 或非数字值
+        return 0;
       });
       return {
         race: row[raceCol],
@@ -282,10 +316,15 @@ window.RaceVisualizations = {
       const obj = { race: row[raceCol] };
       valueCols.forEach(col => {
         const val = row[col];
+        // 处理对象类型（如 {type: 'multiply', value: 3, raw: '3x'}）
         if (val && typeof val === 'object' && val.value !== undefined) {
           obj[col] = val.value;
+        } else if (typeof val === 'number') {
+          // 处理数字
+          obj[col] = val;
         } else {
-          obj[col] = val || 0;
+          // 处理 null 或非数字值
+          obj[col] = 0;
         }
       });
       return obj;
@@ -391,16 +430,34 @@ window.RaceVisualizations = {
   parseTableData: function(table) {
     if (!table) return null;
 
+    console.log('=== 解析表格数据 ===');
+    console.log('表格 HTML:', table.outerHTML.substring(0, 500));
+
     const rows = Array.from(table.querySelectorAll('tr'));
+    console.log(`找到 ${rows.length} 行`);
     if (rows.length === 0) return null;
 
     const headerRow = rows[0];
     const headers = Array.from(headerRow.querySelectorAll('th, td'))
       .map(cell => cell.textContent.trim());
+    console.log('表头:', headers);
 
-    const data = rows.slice(1).map(row => {
+    const data = rows.slice(1).map((row, idx) => {
       const cells = Array.from(row.querySelectorAll('td'));
-      if (cells.length === 0) return null;
+      console.log(`行 ${idx + 1}: 找到 ${cells.length} 个 td 单元格`);
+      
+      // 如果没有 td，尝试查找 th（某些表格可能全部用 th）
+      if (cells.length === 0) {
+        const thCells = Array.from(row.querySelectorAll('th'));
+        console.log(`行 ${idx + 1}: 找到 ${thCells.length} 个 th 单元格`);
+        if (thCells.length === 0) return null;
+        
+        return headers.reduce((obj, header, i) => {
+          const cellText = thCells[i] ? thCells[i].textContent.trim() : '';
+          obj[header] = this.parseCellValue(cellText);
+          return obj;
+        }, {});
+      }
 
       return headers.reduce((obj, header, i) => {
         const cellText = cells[i] ? cells[i].textContent.trim() : '';
@@ -408,6 +465,9 @@ window.RaceVisualizations = {
         return obj;
       }, {});
     }).filter(row => row !== null);
+
+    console.log('解析后数据行数:', data.length);
+    console.log('解析后数据:', data);
 
     return { headers, data };
   },
@@ -418,7 +478,8 @@ window.RaceVisualizations = {
   parseCellValue: function(value) {
     value = value.trim();
 
-    if (value === '' || value === '...' || value === '—') {
+    // 处理空值和占位符（包括 ... 和 … 省略号字符）
+    if (value === '' || value === '...' || value === '…' || value === '—' || value === '-') {
       return null;
     }
 

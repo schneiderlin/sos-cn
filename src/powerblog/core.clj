@@ -23,4 +23,5 @@
                      {:public-dir "public"
                       :paths ["/styles.css"]}}
    :optimus/assets [{:public-dir "public"
-                     :paths ["/js/race-visualizations.js"]}]})
+                     :paths ["/js/race-visualizations.js"
+                             "/css/visualizations.css"]}]})
