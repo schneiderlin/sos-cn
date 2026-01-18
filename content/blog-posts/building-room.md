@@ -380,6 +380,6 @@ Furnisher 是控制房间建造的核心组件。
 
 ## 相关文章
 
-- [资源查询](/blog-posts/resource-query/)
+- [资源系统](/blog-posts/resource-system/)
 - [仓库创建](/blog-posts/warehouse-creation/)
-- [农场创建与管理](/blog-posts/farm-creation/)
+- [农场系统](/blog-posts/farm-system/)

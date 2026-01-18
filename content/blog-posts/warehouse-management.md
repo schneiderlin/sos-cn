@@ -365,6 +365,6 @@
 
 ## 相关文章
 
-- [资源查询](/blog-posts/resource-query/)
+- [资源系统](/blog-posts/resource-system/)
 - [仓库创建](/blog-posts/warehouse-creation/)
 - [建筑与房间](/blog-posts/building-room/)

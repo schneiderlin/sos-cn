@@ -225,6 +225,6 @@
 
 ## 相关文章
 
-- [动物查询与管理](/blog-posts/animals-query/)
+- [动物查询与管理](/blog-posts/animal-query/)
 - [建筑与房间](/blog-posts/building-room/)
 - [仓库管理](/blog-posts/warehouse-management/)
