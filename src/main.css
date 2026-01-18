@@ -1,2 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+
+/* Tailwind 默认不扫描 .clj 文件，需要手动指定 */
+@source "../src";
+@source "../content";
