@@ -13,7 +13,7 @@
 
 (def config
   {:site/title "The Powerblog"
-   :datomic/schema-file "resources/schema.edn" 
+   :datomic/schema-file "resources/schema.edn"
    :powerpack/port 8000
    :powerpack/log-level :debug
    :powerpack/render-page #'render/render-page
@@ -21,4 +21,6 @@
    #_#_:powerpack/on-ingested #'ingest/on-ingested
    :optimus/bundles {"app.css"
                      {:public-dir "public"
-                      :paths ["/styles.css"]}}})
+                      :paths ["/styles.css"]}}
+   :optimus/assets [{:public-dir "public"
+                     :paths ["/js/race-visualizations.js"]}]})

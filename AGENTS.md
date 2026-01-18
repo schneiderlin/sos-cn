@@ -38,3 +38,18 @@ bd sync               # Sync with git
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+## Project Architecture Notes
+
+### Static Assets and Public Directory
+
+**IMPORTANT: Static assets (JS, CSS, images) MUST be placed under `resources/public/`, NOT `public/`**
+
+- ✅ **Correct**: `resources/public/js/race-visualizations.js`
+- ✅ **Correct**: `resources/public/css/visualizations.css`
+- ❌ **Incorrect**: `public/js/race-visualizations.js`
+- ❌ **Incorrect**: `public/css/visualizations.css`
+
+**Reason**: Powerpack expects static files to be served from `resources/public/` directory structure. Files placed at root `public/` will not be accessible.
+
+**Reference**: See `deps.edn` `:paths` includes both `"src"` and `"resources"` - all static assets must be within `resources/` to be correctly resolved.
+

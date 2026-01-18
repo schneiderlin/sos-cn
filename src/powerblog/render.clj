@@ -9,8 +9,11 @@
     (when (:title opts) [:title (:title opts)])
     [:meta {:charset "UTF-8"}]
     [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0"}]
-    [:link {:rel "stylesheet" :href "/styles.css"}]]
-   [:body content]])
+    [:link {:rel "stylesheet" :href "/css/visualizations.css"}]]
+   [:body
+    content
+    [:script {:src "https://d3js.org/d3.v7.min.js"}]
+    [:script {:src "/js/race-visualizations.js"}]]])
 
 (defn render-article [_context page]
   (layout {:title (:page/title page)}
