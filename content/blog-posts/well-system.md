@@ -33,33 +33,30 @@
 ```clojure
 ;; 创建水井(带选项)
 (w/create-well 100 150
-               {:depth 10.0
-                :capacity 100.0
-                :priority 0.8})
+               :material-name "STONE"
+               :upgrade 0)
 ```
 
 可选项:
-- `:depth` - 水井深度
-- `:capacity` - 储水容量
-- `:priority` - 工作优先级
+- `:material-name` - 建筑材料名称（必须为 "STONE"）
+- `:upgrade` - 升级等级（默认 0）
 
 ### 单次更新创建
 
 ```clojure
 ;; 创建水井(单次更新)
 (w/create-well-once 100 150
-                    {:depth 10.0
-                     :capacity 100.0})
+                     :material-name "STONE"
+                     :upgrade 0)
 ```
 
 `create-well-once` 避免重复执行。
 
 ## 注意事项
 
-1. **水源依赖**: 水井需要有地下水资源支持。
-2. **容量管理**: 更大容量可以支持更多小人,但建造成本更高。
-3. **优先级设置**: 优先级影响小人使用水井的顺序。
-4. **位置选择**: 靠近居住区的小人访问更方便。
+1. **材料限制**: 水井必须使用 "STONE" 石头材料建造。
+2. **尺寸固定**: 水井固定为 3x3 尺寸，不支持其他大小。
+3. **位置选择**: 靠近居住区的小人访问更方便。
 
 ## 相关文章
 
