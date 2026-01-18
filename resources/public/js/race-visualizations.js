@@ -140,6 +140,8 @@ window.RaceVisualizations = {
 
     if (chartType === 'radar-chart') {
       this.renderRadarChart(container, tableData);
+    } else if (chartType === 'grouped-bar') {
+      this.renderGroupedBarChart(container, tableData);
     } else {
       // 默认渲染柱状图
       this.renderBarChart(container, tableData);
@@ -404,24 +406,221 @@ window.RaceVisualizations = {
   },
 
   /**
+   * 渲染分组柱状图（用于种族基本信息等）
+   * 重新设计：使用多行水平条形图，每个指标一行，带独立刻度
+   */
+  renderGroupedBarChart: function(container, tableData) {
+    const raceCol = tableData.headers[0];
+    const boolCols = tableData.headers.slice(1, 2);
+    const numericCols = tableData.headers.slice(2);
+
+    const data = tableData.data.map(row => {
+      const obj = { race: row[raceCol] };
+      boolCols.forEach(col => {
+        obj[col] = row[col] === '是' || row[col] === true;
+      });
+      numericCols.forEach(col => {
+        const val = row[col];
+        if (typeof val === 'number') {
+          obj[col] = val;
+        } else if (val && typeof val === 'object' && val.value !== undefined) {
+          obj[col] = val.value;
+        } else {
+          obj[col] = 0;
+        }
+      });
+      return obj;
+    });
+
+    // 创建主容器
+    const mainContainer = document.createElement('div');
+    mainContainer.className = 'race-info-grid';
+    mainContainer.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      padding: 20px 0;
+    `;
+    container.appendChild(mainContainer);
+
+    // 为每个指标创建一个独立的小图表
+    numericCols.forEach((col, colIndex) => {
+      const chartCard = document.createElement('div');
+      chartCard.className = 'metric-card';
+      chartCard.style.cssText = `
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      `;
+
+      // 标题
+      const title = document.createElement('h4');
+      title.textContent = col;
+      title.style.cssText = `
+        margin: 0 0 16px 0;
+        color: #e0e0e0;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid ${this.getMetricColor(colIndex)};
+        padding-bottom: 8px;
+      `;
+      chartCard.appendChild(title);
+
+      const maxValue = Math.max(...data.map(d => d[col]));
+      
+      // 排序数据，按该指标降序
+      const sortedData = [...data].sort((a, b) => b[col] - a[col]);
+
+      sortedData.forEach((d, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = `
+          display: flex;
+          align-items: center;
+          margin-bottom: 10px;
+          gap: 10px;
+        `;
+
+        // 可玩标记
+        const playableDot = document.createElement('span');
+        playableDot.style.cssText = `
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: ${d[boolCols[0]] ? '#10b981' : '#6b7280'};
+          flex-shrink: 0;
+        `;
+        playableDot.title = d[boolCols[0]] ? '可玩种族' : '不可玩';
+        row.appendChild(playableDot);
+
+        // 种族名
+        const raceName = document.createElement('span');
+        raceName.textContent = d.race;
+        raceName.style.cssText = `
+          width: 80px;
+          flex-shrink: 0;
+          color: #d1d5db;
+          font-size: 13px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        `;
+        row.appendChild(raceName);
+
+        // 进度条容器
+        const barContainer = document.createElement('div');
+        barContainer.style.cssText = `
+          flex: 1;
+          height: 22px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 4px;
+          overflow: hidden;
+          position: relative;
+        `;
+
+        // 进度条
+        const bar = document.createElement('div');
+        const percentage = maxValue > 0 ? (d[col] / maxValue) * 100 : 0;
+        bar.style.cssText = `
+          width: ${percentage}%;
+          height: 100%;
+          background: linear-gradient(90deg, ${this.getMetricColor(colIndex)}cc, ${this.getMetricColor(colIndex)});
+          border-radius: 4px;
+          transition: width 0.5s ease;
+        `;
+        barContainer.appendChild(bar);
+
+        row.appendChild(barContainer);
+
+        // 数值
+        const value = document.createElement('span');
+        value.textContent = this.formatValue(d[col]);
+        value.style.cssText = `
+          width: 60px;
+          text-align: right;
+          color: #f3f4f6;
+          font-size: 14px;
+          font-weight: 600;
+          font-variant-numeric: tabular-nums;
+        `;
+        row.appendChild(value);
+
+        chartCard.appendChild(row);
+      });
+
+      mainContainer.appendChild(chartCard);
+    });
+
+    // 添加图例说明
+    const legendDiv = document.createElement('div');
+    legendDiv.style.cssText = `
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 16px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      margin-top: 8px;
+    `;
+    
+    const playableLegend = document.createElement('span');
+    playableLegend.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;margin-right:6px;vertical-align:middle;"></span><span style="color:#9ca3af;font-size:13px;">可玩种族</span>';
+    
+    const nonPlayableLegend = document.createElement('span');
+    nonPlayableLegend.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;margin-right:6px;vertical-align:middle;"></span><span style="color:#9ca3af;font-size:13px;">不可玩种族</span>';
+    
+    legendDiv.appendChild(playableLegend);
+    legendDiv.appendChild(nonPlayableLegend);
+    mainContainer.appendChild(legendDiv);
+  },
+
+  /**
+   * 获取指标颜色
+   */
+  getMetricColor: function(index) {
+    const colors = [
+      '#f59e0b', // 琥珀色 - 身高
+      '#3b82f6', // 蓝色 - 奴隶价格
+      '#10b981', // 翠绿色 - 成年天数
+      '#8b5cf6', // 紫色
+      '#ef4444', // 红色
+      '#06b6d4', // 青色
+    ];
+    return colors[index % colors.length];
+  },
+
+  /**
+   * 格式化数值显示
+   */
+  formatValue: function(value) {
+    if (value >= 1000) {
+      return (value / 1000).toFixed(1) + 'k';
+    }
+    return value % 1 === 0 ? value.toString() : value.toFixed(1);
+  },
+
+  /**
    * 添加回退按钮
    */
   addFallbackButton: function(container, marker) {
     const btn = document.createElement('button');
-    btn.textContent = '查看原始表格';
-    btn.className = 'visualization-fallback-btn';
+    btn.textContent = '📋 查看原始表格';
+    btn.className = 'inline-flex items-center gap-1.5 my-3 px-4 py-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-slate-500 rounded-md text-slate-300 hover:text-slate-100 text-sm cursor-pointer transition-all duration-200';
     btn.onclick = () => {
       if (marker.table.style.display === 'none') {
         marker.table.style.display = 'table';
         container.style.display = 'none';
-        btn.textContent = '查看图表';
+        btn.textContent = '📊 查看图表';
       } else {
         marker.table.style.display = 'none';
         container.style.display = 'block';
-        btn.textContent = '查看原始表格';
+        btn.textContent = '📋 查看原始表格';
       }
     };
-    container.appendChild(btn);
+    // 把按钮插入到 container 前面，而不是里面
+    container.parentNode.insertBefore(btn, container);
   },
 
   /**
