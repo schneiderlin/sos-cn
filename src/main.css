@@ -1,5 +1,2 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-
-/* gitignore 了, 所以需要明确让 tw 扫 */
-@source "../target/powerpack";
