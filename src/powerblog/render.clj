@@ -16,7 +16,7 @@
 
 (defn render-article [_context page]
   (layout {:title (:page/title page)}
-          [:div {:class ["max-w-[1000px]" "mx-auto" "bg-white" "rounded-xl" "p-10" "shadow-sm"]}
+          [:div {:class ["mx-auto" "bg-white" "rounded-xl" "p-10" "shadow-sm"]}
            [:h1 {:class ["text-3xl" "text-[#1e3a5f]" "mb-5"]} (:page/title page)]
            [:div {:class ["flex" "gap-2" "flex-wrap" "mt-2.5"]}
               (for [tag (:blog-post/tags page)]

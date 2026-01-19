@@ -142,6 +142,8 @@ window.RaceVisualizations = {
       this.renderRadarChart(container, tableData);
     } else if (chartType === 'grouped-bar') {
       this.renderGroupedBarChart(container, tableData);
+    } else if (chartType === 'semantic-heatmap') {
+      this.renderSemanticHeatmap(container, tableData);
     } else {
       // 默认渲染柱状图
       this.renderBarChart(container, tableData);
@@ -574,6 +576,294 @@ window.RaceVisualizations = {
     legendDiv.appendChild(playableLegend);
     legendDiv.appendChild(nonPlayableLegend);
     mainContainer.appendChild(legendDiv);
+  },
+
+  /**
+   * 渲染语义热力图
+   * 用于展示加法和乘法混合的属性数据，通过颜色表示对玩家的有利程度
+   */
+  renderSemanticHeatmap: function(container, tableData) {
+    const raceCol = tableData.headers[0];
+    const attrCols = tableData.headers.slice(1);
+
+    // 属性语义配置：positive = 数值越大越好，negative = 数值越大越差
+    const attrSemantics = {
+      '体重': 'neutral',      // 中性：大=强壮但笨重
+      '健康': 'positive',     // 越高越好
+      '速度': 'positive',     // 越快越好
+      '加速': 'positive',     // 越高越好（0.75x 是减速）
+      '寿命': 'positive',     // 越长越好
+      '饥饿': 'negative',     // 越低越好（2x = 吃得多 = 差）
+      '耐寒': 'positive',     // 越高越好
+      '耐热': 'positive',     // 越高越好
+    };
+
+    // 创建主容器
+    const mainContainer = document.createElement('div');
+    mainContainer.className = 'semantic-heatmap';
+    mainContainer.style.cssText = `
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+      border-radius: 16px;
+      padding: 24px;
+      overflow-x: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    `;
+    container.appendChild(mainContainer);
+
+    // 创建表格
+    const table = document.createElement('table');
+    table.style.cssText = `
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 4px;
+      font-size: 14px;
+    `;
+
+    // 表头
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    
+    tableData.headers.forEach((header, i) => {
+      const th = document.createElement('th');
+      th.textContent = header;
+      th.style.cssText = `
+        padding: 12px 16px;
+        text-align: ${i === 0 ? 'left' : 'center'};
+        color: #94a3b8;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #334155;
+        white-space: nowrap;
+      `;
+      
+      // 为属性列添加语义指示器
+      if (i > 0) {
+        const semantic = attrSemantics[header] || 'neutral';
+        const indicator = semantic === 'positive' ? '↑' : semantic === 'negative' ? '↓' : '◆';
+        const indicatorColor = semantic === 'positive' ? '#10b981' : semantic === 'negative' ? '#ef4444' : '#94a3b8';
+        th.innerHTML = `${header} <span style="color:${indicatorColor};font-size:10px;">${indicator}</span>`;
+      }
+      
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // 表体
+    const tbody = document.createElement('tbody');
+    
+    tableData.data.forEach((row, rowIndex) => {
+      const tr = document.createElement('tr');
+      tr.style.cssText = `
+        transition: background 0.2s ease;
+      `;
+      tr.onmouseenter = () => tr.style.background = 'rgba(255,255,255,0.03)';
+      tr.onmouseleave = () => tr.style.background = 'transparent';
+
+      tableData.headers.forEach((header, colIndex) => {
+        const td = document.createElement('td');
+        const value = row[header];
+        
+        if (colIndex === 0) {
+          // 种族名称列
+          td.textContent = value;
+          td.style.cssText = `
+            padding: 12px 16px;
+            color: #e2e8f0;
+            font-weight: 500;
+            white-space: nowrap;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+          `;
+        } else {
+          // 属性值列
+          const cellData = this.parseCellForHeatmap(value, attrSemantics[header] || 'neutral');
+          td.innerHTML = cellData.display;
+          td.style.cssText = `
+            padding: 10px 12px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            background: ${cellData.bgColor};
+            color: ${cellData.textColor};
+            transition: transform 0.2s ease;
+          `;
+          td.title = cellData.tooltip;
+        }
+        
+        tr.appendChild(td);
+      });
+      
+      tbody.appendChild(tr);
+    });
+    
+    table.appendChild(tbody);
+    mainContainer.appendChild(table);
+
+    // 添加图例
+    const legend = document.createElement('div');
+    legend.style.cssText = `
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #334155;
+    `;
+    
+    const legendItems = [
+      { color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', text: '有利加成' },
+      { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', text: '不利加成' },
+      { color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', text: '中性/大型' },
+      { color: '#64748b', bg: 'rgba(100, 116, 139, 0.1)', text: '无修改' },
+    ];
+    
+    legendItems.forEach(item => {
+      const legendItem = document.createElement('span');
+      legendItem.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #94a3b8;
+      `;
+      legendItem.innerHTML = `
+        <span style="
+          display: inline-block;
+          width: 24px;
+          height: 18px;
+          border-radius: 4px;
+          background: ${item.bg};
+          border: 1px solid ${item.color}40;
+        "></span>
+        ${item.text}
+      `;
+      legend.appendChild(legendItem);
+    });
+    
+    mainContainer.appendChild(legend);
+  },
+
+  /**
+   * 解析单元格数据用于热力图显示
+   */
+  parseCellForHeatmap: function(value, semantic) {
+    // 处理 null、undefined 或 "-"
+    if (value === null || value === undefined || value === '-' || value === '—') {
+      return {
+        display: '<span style="opacity:0.4;">—</span>',
+        bgColor: 'rgba(100, 116, 139, 0.08)',
+        textColor: '#64748b',
+        tooltip: '无修改，使用默认值'
+      };
+    }
+
+    let numValue, isMultiply, displayValue;
+    
+    // 解析值
+    if (typeof value === 'object' && value !== null) {
+      // 已解析的对象格式
+      isMultiply = value.type === 'multiply';
+      numValue = value.value;
+      displayValue = value.raw || (isMultiply ? `${numValue}x` : (numValue >= 0 ? `+${numValue}` : numValue));
+    } else if (typeof value === 'string') {
+      const strVal = value.trim();
+      if (strVal.endsWith('x')) {
+        isMultiply = true;
+        numValue = parseFloat(strVal.slice(0, -1));
+        displayValue = strVal;
+      } else if (strVal.startsWith('+') || strVal.startsWith('-')) {
+        isMultiply = false;
+        numValue = parseFloat(strVal);
+        displayValue = strVal;
+      } else {
+        numValue = parseFloat(strVal);
+        isMultiply = false;
+        displayValue = numValue >= 0 ? `+${numValue}` : `${numValue}`;
+      }
+    } else if (typeof value === 'number') {
+      numValue = value;
+      isMultiply = false;
+      displayValue = numValue >= 0 ? `+${numValue}` : `${numValue}`;
+    } else {
+      return {
+        display: String(value),
+        bgColor: 'transparent',
+        textColor: '#94a3b8',
+        tooltip: ''
+      };
+    }
+
+    if (isNaN(numValue)) {
+      return {
+        display: String(value),
+        bgColor: 'transparent',
+        textColor: '#94a3b8',
+        tooltip: ''
+      };
+    }
+
+    // 计算"偏离程度"
+    let deviation;
+    if (isMultiply) {
+      // 乘法：以 1.0 为基准，计算对数偏离
+      // 2x → +1, 0.5x → -1, 1x → 0
+      deviation = Math.log2(numValue);
+    } else {
+      // 加法：直接使用数值作为偏离
+      deviation = numValue;
+    }
+
+    // 根据语义确定颜色
+    let isGood;
+    if (semantic === 'positive') {
+      isGood = deviation > 0;
+    } else if (semantic === 'negative') {
+      isGood = deviation < 0;
+    } else {
+      // neutral：使用橙色
+      isGood = null;
+    }
+
+    // 计算颜色强度（基于偏离绝对值）
+    const absDeviation = Math.abs(deviation);
+    const intensity = Math.min(absDeviation / 2, 1); // 归一化到 0-1
+    
+    let bgColor, textColor;
+    
+    if (deviation === 0 || (isMultiply && numValue === 1)) {
+      // 无变化
+      bgColor = 'rgba(100, 116, 139, 0.08)';
+      textColor = '#64748b';
+    } else if (isGood === null) {
+      // 中性属性（如体重）- 使用橙色
+      bgColor = `rgba(245, 158, 11, ${0.1 + intensity * 0.2})`;
+      textColor = '#fbbf24';
+    } else if (isGood) {
+      // 有利 - 绿色
+      bgColor = `rgba(16, 185, 129, ${0.1 + intensity * 0.25})`;
+      textColor = '#34d399';
+    } else {
+      // 不利 - 红色
+      bgColor = `rgba(239, 68, 68, ${0.1 + intensity * 0.25})`;
+      textColor = '#f87171';
+    }
+
+    // 生成 tooltip
+    const typeStr = isMultiply ? '乘法修正' : '加法修正';
+    const baseStr = isMultiply ? '基准 1.0' : '基准 0';
+    const effectStr = isGood === true ? '(有利)' : isGood === false ? '(不利)' : '(中性)';
+    
+    return {
+      display: displayValue,
+      bgColor,
+      textColor,
+      tooltip: `${typeStr}，${baseStr}，${effectStr}`
+    };
   },
 
   /**
